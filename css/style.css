@@ -104,9 +104,23 @@ body {
 .playlist li:hover { background: var(--panel2); }
 .playlist li.active { background: #2a2a2a; border-left: 3px solid var(--accent); }
 .playlist .meta { min-width: 0; }
-.playlist .t { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.playlist .a { font-size: 0.8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.playlist .like { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; }
+.playlist .t,
+.playlist .a,
+.track-mini .t {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.playlist .t { font-weight: 500; }
+.playlist .a { font-size: 0.8rem; color: var(--muted); }
+.playlist .like,
+.buttons button,
+.volume button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.playlist .like { color: var(--muted); font-size: 1rem; }
 .playlist .like.on { color: var(--accent); }
 .sidebar-foot { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 0.8rem; }
 .sidebar-foot button { background: var(--panel2); color: var(--text); border: 1px solid #333; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
@@ -128,15 +142,20 @@ body {
 .now-playing { text-align: center; max-width: 420px; width: 100%; }
 .hidden { display: none !important; }
 .cover-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+.cover,
+.cover-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1db954, #191414);
+  background-size: cover;
+  background-position: center;
+}
 .cover {
   width: 260px; height: 260px;
   border-radius: 16px;
-  display: flex; align-items: center; justify-content: center;
   font-size: 5rem;
-  background: linear-gradient(135deg, #1db954, #191414);
   box-shadow: 0 20px 60px rgba(0,0,0,.5);
-  background-size: cover;
-  background-position: center;
 }
 .now-playing h2 { margin: 8px 0 4px; }
 .now-playing p { margin: 0 0 8px; color: var(--muted); }
@@ -157,17 +176,14 @@ body {
 .track-mini { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .cover-mini {
   width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;
-  background: linear-gradient(135deg, #1db954, #191414);
-  display: flex; align-items: center; justify-content: center;
-  background-size: cover; background-position: center;
 }
-.track-mini .t { font-size: 0.9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.track-mini .t { font-size: 0.9rem; font-weight: 500; max-width: 220px; }
 .track-mini .a { font-size: 0.8rem; color: var(--muted); }
 .controls { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .buttons { display: flex; align-items: center; gap: 12px; }
 .buttons button {
-  background: none; border: none; color: var(--muted);
-  font-size: 1.1rem; cursor: pointer; padding: 6px;
+  color: var(--muted);
+  font-size: 1.1rem; padding: 6px;
   position: relative;
 }
 .buttons button.active { color: var(--accent); }
@@ -185,7 +201,7 @@ body {
 input[type="range"] { accent-color: var(--accent); cursor: pointer; }
 #seek { flex: 1; }
 .volume { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
-.volume button { background: none; border: none; font-size: 1.1rem; cursor: pointer; }
+.volume button { font-size: 1.1rem; }
 #vol { width: 110px; }
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; grid-template-areas: "main" "player"; }

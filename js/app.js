@@ -17,6 +17,7 @@
     return `${m}:${String(sec).padStart(2, '0')}`;
   };
   const idOf = (t) => t.src;
+  const isFav = (t) => s.favorites.includes(idOf(t));
 
   // ---------- Carga ----------
   async function loadManifest() {
@@ -55,7 +56,7 @@
   function visibleTracks() {
     return tracks
       .map((t, i) => ({ ...t, idx: i }))
-      .filter((t) => (filter === 'favorites' ? s.favorites.includes(idOf(t)) : true))
+      .filter((t) => (filter === 'favorites' ? isFav(t) : true))
       .filter((t) => (t.title + ' ' + t.artist).toLowerCase().includes(query));
   }
 
@@ -67,7 +68,7 @@
     list.forEach((t) => {
       const li = document.createElement('li');
       if (t.idx === currentIdx) li.classList.add('active');
-      const fav = s.favorites.includes(idOf(t));
+      const fav = isFav(t);
       li.innerHTML = `<div class="meta"><div class="t"></div><div class="a"></div></div>
         <button class="like ${fav ? 'on' : ''}" title="Favorito">♥</button>`;
       li.querySelector('.t').textContent = t.title;
@@ -116,8 +117,9 @@
     if (cur && idOf(cur) === id) updateFavUI(cur);
   }
   function updateFavUI(t) {
-    $('favBtn').classList.toggle('on', s.favorites.includes(idOf(t)));
-    $('favBtn').textContent = s.favorites.includes(idOf(t)) ? '♥' : '♡';
+    const fav = isFav(t);
+    $('favBtn').classList.toggle('on', fav);
+    $('favBtn').textContent = fav ? '♥' : '♡';
   }
 
   // ---------- Controles ----------
@@ -178,9 +180,11 @@
   searchEl.oninput = () => { query = searchEl.value.trim().toLowerCase(); render(); };
 
   // ---------- Añadir archivos ----------
+  const AUDIO_EXT = /\.(mp3|ogg|wav|m4a|flac|opus)$/i;
+  const isAudio = (f) => f && (f.type?.startsWith('audio/') || AUDIO_EXT.test(f.name || ''));
   $('fileInput').onchange = (e) => addFiles(e.target.files);
   function addFiles(files) {
-    const audios = [...files].filter((f) => f.type.startsWith('audio/'));
+    const audios = [...files].filter(isAudio);
     audios.forEach((f) => {
       tracks.push({
         title: f.name.replace(/\.[^.]+$/, ''),
@@ -206,7 +210,7 @@
       const dir = await window.showDirectoryPicker();
       const found = [];
       for await (const entry of dir.values()) {
-        if (entry.kind === 'file' && /\.(mp3|ogg|wav|m4a|flac|opus)$/i.test(entry.name)) {
+        if (entry.kind === 'file' && isAudio(entry)) {
           const file = await entry.getFile();
           found.push(file);
         }
@@ -256,6 +260,7 @@
   }
 
   // ---------- Teclado + MediaSession ----------
+  const keyBtnMap = { n: 'nextBtn', p: 'prevBtn', m: 'muteBtn', f: 'favBtn', s: 'shuffleBtn' };
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
     const k = e.key.toLowerCase();
@@ -264,11 +269,7 @@
     else if (e.key === 'ArrowLeft') audio.currentTime -= 10;
     else if (e.key === 'ArrowUp') { e.preventDefault(); vol.value = Math.min(100, +vol.value + 5); vol.oninput(); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); vol.value = Math.max(0, +vol.value - 5); vol.oninput(); }
-    else if (k === 'n') $('nextBtn').click();
-    else if (k === 'p') $('prevBtn').click();
-    else if (k === 'm') $('muteBtn').click();
-    else if (k === 'f') $('favBtn').click();
-    else if (k === 's') $('shuffleBtn').click();
+    else if (keyBtnMap[k]) $(keyBtnMap[k]).click();
   });
   try {
     navigator.mediaSession.setActionHandler('play', () => audio.play());
