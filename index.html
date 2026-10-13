@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Music Player</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="logo">♪ Music Player</div>
+
+      <div class="search-box">
+        <input type="search" id="search" placeholder="Buscar canción o artista..." autocomplete="off" />
+      </div>
+
+      <nav class="filters">
+        <button class="filter active" data-filter="all">Todas</button>
+        <button class="filter" data-filter="favorites">♥ Favoritas</button>
+      </nav>
+
+      <div class="actions">
+        <label class="btn btn-primary" for="fileInput">+ Añadir música</label>
+        <input type="file" id="fileInput" accept="audio/*" multiple hidden />
+        <button class="btn btn-ghost" id="folderBtn" title="Abrir carpeta ./music (Chrome/Edge)">📁 Abrir carpeta</button>
+        <button class="btn btn-ghost" id="genHint" title="Cómo agregar archivos a ./music">?</button>
+      </div>
+
+      <div class="drop-hint" id="dropHint">Arrastra tus .mp3 aquí</div>
+
+      <ul class="playlist" id="playlist"></ul>
+
+      <div class="sidebar-foot">
+        <span id="count">0 canciones</span>
+        <button id="rescanBtn" title="Recargar manifest">⟳</button>
+      </div>
+    </aside>
+
+    <main class="main" id="dropZone">
+      <div class="empty" id="emptyState">
+        <div class="empty-icon">🎵</div>
+        <h1>Sin música todavía</h1>
+        <p>Pon tus <code>.mp3</code> en <code>./music/</code> y pulsa ⟳,<br />o arrastra archivos aquí.</p>
+        <code class="cmd">node tools/gen-manifest.js</code>
+      </div>
+
+      <div class="now-playing hidden" id="nowPlaying">
+        <div class="cover-wrap">
+          <div class="cover" id="cover">♪</div>
+        </div>
+        <h2 id="trackTitle">—</h2>
+        <p id="trackArtist">—</p>
+        <button class="fav" id="favBtn" title="Favorito (F)">♡</button>
+        <canvas id="visualizer" height="90"></canvas>
+      </div>
+    </main>
+
+    <footer class="player">
+      <div class="track-mini">
+        <div class="cover-mini" id="coverMini">♪</div>
+        <div>
+          <div class="t" id="miniTitle">Nada en reproducción</div>
+          <div class="a" id="miniArtist">—</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="buttons">
+          <button id="shuffleBtn" title="Aleatorio (S)">🔀</button>
+          <button id="prevBtn" title="Anterior (P)">⏮</button>
+          <button id="playBtn" class="play" title="Play/Pausa (Espacio)">▶</button>
+          <button id="nextBtn" title="Siguiente (N)">⏭</button>
+          <button id="repeatBtn" title="Repetir: off → todo → una">🔁<span id="repeatBadge"></span></button>
+        </div>
+        <div class="progress">
+          <span id="cur">0:00</span>
+          <input type="range" id="seek" min="0" max="1000" value="0" />
+          <span id="dur">0:00</span>
+        </div>
+      </div>
+
+      <div class="volume">
+        <button id="muteBtn" title="Mute (M)">🔊</button>
+        <input type="range" id="vol" min="0" max="100" value="90" />
+      </div>
+
+      <audio id="audio" preload="metadata"></audio>
+    </footer>
+  </div>
+
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
