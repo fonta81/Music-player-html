@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "title": "Color Your Night",
+    "artist": "Artista desconocido",
+    "src": "music/canciones/Color Your Night.mp3",
+    "cover": ""
+  },
+  {
+    "title": "Gourmet Race (From Kirby Super Star )",
+    "artist": "Artista desconocido",
+    "src": "music/canciones/Gourmet Race (From Kirby Super Star ).mp3",
+    "cover": ""
+  },
+  {
+    "title": "Metal Mario [Cover]",
+    "artist": "Artista desconocido",
+    "src": "music/canciones/Metal Mario [Cover].mp3",
+    "cover": ""
+  }
+]
