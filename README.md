@@ -9,7 +9,6 @@ A static web music player. No npm, no bundler, no build step — just HTML, CSS,
 - Search and favorites filter
 - Favorites, volume, and playback position persisted in `localStorage`
 - Shuffle and repeat modes (off → all → one)
-- Audio visualizer (Web Audio API)
 - Keyboard shortcuts
 - Media Session API (system-level media controls)
 - Responsive design with collapsible sidebar on mobile

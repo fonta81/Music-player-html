@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "title": "Metal Mario [Cover]",
+    "artist": "Artista desconocido",
+    "src": "music/canciones/Metal Mario [Cover].mp3",
+    "cover": ""
+  },
+  {
+    "title": "The Legend of Zelda Ocarina of Time   Lost Woods [Remix]",
+    "artist": "Artista desconocido",
+    "src": "music/canciones/The Legend of Zelda Ocarina of Time - Lost Woods [Remix].mp3",
+    "cover": ""
+  }
+]

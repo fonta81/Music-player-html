@@ -9,7 +9,6 @@
   let order = [];        // índices en orden de reproducción (shuffle o no)
   let pos = 0;           // posición dentro de order
   let filter = 'all', query = '';
-  let audioCtx = null, analyser = null, srcNode = null, rafId = null;
 
   const fmt = (t) => {
     if (!isFinite(t) || t == null) return '0:00';
@@ -124,7 +123,7 @@
 
   // ---------- Controles ----------
   playBtn.onclick = () => (audio.paused ? audio.play() : audio.pause()).catch(() => {});
-  audio.onplay = () => { playBtn.textContent = '⏸'; setupVisualizer(); };
+  audio.onplay = () => { playBtn.textContent = '⏸'; };
   audio.onpause = () => { playBtn.textContent = '▶'; };
   audio.onloadedmetadata = () => { $('dur').textContent = fmt(audio.duration); };
   audio.ontimeupdate = () => {
@@ -224,40 +223,6 @@
 
   // Móvil: tocar logo alterna sidebar
   document.querySelector('.logo').onclick = () => $('sidebar').classList.toggle('open');
-
-  // ---------- Visualizador ----------
-  function setupVisualizer() {
-    try {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        srcNode = audioCtx.createMediaElementSource(audio);
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 64;
-        srcNode.connect(analyser); analyser.connect(audioCtx.destination);
-      }
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      draw();
-    } catch {}
-  }
-  function draw() {
-    if (!analyser) return;
-    const canvas = $('visualizer'), ctx = canvas.getContext('2d');
-    const data = new Uint8Array(analyser.frequencyBinCount);
-    const render2 = () => {
-      if (audio.paused) return;
-      analyser.getByteFrequencyData(data);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const w = canvas.width / data.length;
-      data.forEach((v, i) => {
-        const h = (v / 255) * canvas.height;
-        ctx.fillStyle = '#1db954';
-        ctx.fillRect(i * w, canvas.height - h, w - 2, h);
-      });
-      rafId = requestAnimationFrame(render2);
-    };
-    cancelAnimationFrame(rafId);
-    render2();
-  }
 
   // ---------- Teclado + MediaSession ----------
   const keyBtnMap = { n: 'nextBtn', p: 'prevBtn', m: 'muteBtn', f: 'favBtn', s: 'shuffleBtn' };
