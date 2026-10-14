@@ -10,6 +10,11 @@
   let pos = 0;           // posición dentro de order
   let filter = 'all', query = '';
 
+  // ---------- Iconos (Lucide) ----------
+  // Convierte los <i data-lucide="..."> pendientes en <svg>. Es idempotente y barato.
+  const refreshIcons = () => { if (window.lucide) window.lucide.createIcons(); };
+  const iconHTML = (name, cls = '') => `<i data-lucide="${name}"${cls ? ` class="${cls}"` : ''}></i>`;
+
   const fmt = (t) => {
     if (!isFinite(t) || t == null) return '0:00';
     const m = Math.floor(t / 60), sec = Math.floor(t % 60);
@@ -69,21 +74,22 @@
       if (t.idx === currentIdx) li.classList.add('active');
       const fav = isFav(t);
       li.innerHTML = `<div class="meta"><div class="t"></div><div class="a"></div></div>
-        <button class="like ${fav ? 'on' : ''}" title="Favorito">♥</button>`;
+        <button class="like ${fav ? 'on' : ''}" title="Favorito" aria-label="Favorito" aria-pressed="${fav}">${iconHTML('heart')}</button>`;
       li.querySelector('.t').textContent = t.title;
       li.querySelector('.a').textContent = t.artist;
-      li.onclick = (e) => { if (!e.target.classList.contains('like')) playIndex(t.idx); };
+      li.onclick = (e) => { if (!e.target.closest('.like')) playIndex(t.idx); };
       li.querySelector('.like').onclick = () => toggleFav(t);
       playlistEl.appendChild(li);
     });
     $('emptyState').classList.toggle('hidden', tracks.length > 0);
     $('nowPlaying').classList.toggle('hidden', tracks.length === 0);
     updateShuffleRepeatUI();
+    refreshIcons();
   }
 
   function setCover(el, track) {
     if (track.cover) { el.style.backgroundImage = `url("${track.cover}")`; el.textContent = ''; }
-    else { el.style.backgroundImage = ''; el.textContent = '♪'; }
+    else { el.style.backgroundImage = ''; el.innerHTML = iconHTML('music'); refreshIcons(); }
   }
 
   function loadTrack(i, autoplay = true) {
@@ -102,7 +108,7 @@
       navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist, album: 'Music Player' });
     }
     render();
-    if (autoplay) audio.play().catch(() => {});
+    if (autoplay) audio.play().catch(() => { });
   }
 
   function playIndex(i) { loadTrack(i, true); }
@@ -117,14 +123,18 @@
   }
   function updateFavUI(t) {
     const fav = isFav(t);
-    $('favBtn').classList.toggle('on', fav);
-    $('favBtn').textContent = fav ? '♥' : '♡';
+    $('favBtn').classList.toggle('on', fav);   // el CSS rellena el corazón con .on
+    $('favBtn').setAttribute('aria-pressed', fav);
   }
 
   // ---------- Controles ----------
-  playBtn.onclick = () => (audio.paused ? audio.play() : audio.pause()).catch(() => {});
-  audio.onplay = () => { playBtn.textContent = '⏸'; };
-  audio.onpause = () => { playBtn.textContent = '▶'; };
+  playBtn.onclick = () => (audio.paused ? audio.play() : audio.pause()).catch(() => { });
+  const setPlayingUI = (playing) => {
+    playBtn.classList.toggle('is-playing', playing);   // el CSS alterna play ⇄ pause
+    playBtn.setAttribute('aria-label', playing ? 'Pausar' : 'Reproducir');
+  };
+  audio.onplay = () => setPlayingUI(true);
+  audio.onpause = () => setPlayingUI(false);
   audio.onloadedmetadata = () => { $('dur').textContent = fmt(audio.duration); };
   audio.ontimeupdate = () => {
     $('cur').textContent = fmt(audio.currentTime);
@@ -155,8 +165,10 @@
   };
   function updateShuffleRepeatUI() {
     $('shuffleBtn').classList.toggle('active', s.shuffle);
+    $('shuffleBtn').setAttribute('aria-pressed', s.shuffle);
     $('repeatBtn').classList.toggle('active', s.repeat !== 'off');
-    $('repeatBadge').textContent = s.repeat === 'one' ? '1' : s.repeat === 'all' ? '∞' : '';
+    $('repeatBtn').setAttribute('aria-pressed', s.repeat !== 'off');
+    $('repeatBtn').dataset.mode = s.repeat;   // off | all | one → el CSS muestra repeat o repeat-1
     $('repeatBtn').title = `Repetir: ${s.repeat}`;
   }
 
@@ -164,7 +176,11 @@
   audio.volume = s.volume ?? 0.9;
   vol.oninput = () => { audio.volume = vol.value / 100; s.volume = audio.volume; store.save(); updateMute(); };
   $('muteBtn').onclick = () => { audio.muted = !audio.muted; updateMute(); };
-  function updateMute() { $('muteBtn').textContent = audio.muted || audio.volume === 0 ? '🔇' : '🔊'; }
+  function updateMute() {
+    const silent = audio.muted || audio.volume === 0;
+    $('muteBtn').dataset.level = silent ? 'muted' : audio.volume < 0.5 ? 'low' : 'high'; // el CSS elige volume-x / volume-1 / volume-2
+    $('muteBtn').setAttribute('aria-label', silent ? 'Activar sonido' : 'Silenciar');
+  }
   updateMute();
 
   $('favBtn').onclick = () => { const t = tracks[order[pos]]; if (t) toggleFav(t); };
@@ -215,11 +231,11 @@
         }
       }
       addFiles(found);
-    } catch {}
+    } catch { }
   };
 
   $('rescanBtn').onclick = loadManifest;
-  $('genHint').onclick = () => alert('Pon tus .mp3 en la carpeta ./music y ejecuta:\n\n  node tools/gen-manifest.js\n\nLuego pulsa ⟳ para recargar.');
+  $('genHint').onclick = () => alert('Pon tus .mp3 en la carpeta ./music y ejecuta:\n\n  node tools/gen-manifest.js\n\nLuego pulsa el botón de recargar (↻) para actualizar la lista.');
 
   // Móvil: tocar logo alterna sidebar
   document.querySelector('.logo').onclick = () => $('sidebar').classList.toggle('open');
@@ -241,7 +257,8 @@
     navigator.mediaSession.setActionHandler('pause', () => audio.pause());
     navigator.mediaSession.setActionHandler('previoustrack', () => $('prevBtn').click());
     navigator.mediaSession.setActionHandler('nexttrack', () => $('nextBtn').click());
-  } catch {}
+  } catch { }
 
+  refreshIcons();
   loadManifest();
 })();

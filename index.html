@@ -7,11 +7,15 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Lucide Icons (UMD, versión fijada + SRI). Los scripts con defer se ejecutan en orden: lucide → store → app -->
+  <script defer src="https://cdn.jsdelivr.net/npm/lucide@1.48.0/dist/umd/lucide.min.js"
+          integrity="sha384-Hh7C333mXel+qppGoFs4qAOXp7h67eur4XsQVF2bvHAM3MQ4DX4cQI7oRCzb98J4"
+          crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="app">
     <aside class="sidebar" id="sidebar">
-      <div class="logo">♪ Music Player</div>
+      <div class="logo"><i data-lucide="music-2" class="logo-icon"></i><span>Music Player</span></div>
 
       <div class="search-box">
         <input type="search" id="search" placeholder="Buscar canción o artista..." autocomplete="off" />
@@ -19,14 +23,14 @@
 
       <nav class="filters">
         <button class="filter active" data-filter="all">Todas</button>
-        <button class="filter" data-filter="favorites">♥ Favoritas</button>
+        <button class="filter" data-filter="favorites"><i data-lucide="heart"></i><span>Favoritas</span></button>
       </nav>
 
       <div class="actions">
-        <label class="btn btn-primary" for="fileInput">+ Añadir música</label>
+        <label class="btn btn-primary" for="fileInput"><i data-lucide="plus"></i><span>Añadir música</span></label>
         <input type="file" id="fileInput" accept="audio/*" multiple hidden />
-        <button class="btn btn-ghost" id="folderBtn" title="Abrir carpeta ./music (Chrome/Edge)">📁 Abrir carpeta</button>
-        <button class="btn btn-ghost" id="genHint" title="Cómo agregar archivos a ./music">?</button>
+        <button class="btn btn-ghost" id="folderBtn" title="Abrir carpeta ./music (Chrome/Edge)"><i data-lucide="folder-open"></i><span>Abrir carpeta</span></button>
+        <button class="btn btn-ghost" id="genHint" title="Cómo agregar archivos a ./music" aria-label="Ayuda: cómo agregar archivos"><i data-lucide="circle-help"></i></button>
       </div>
 
       <div class="drop-hint" id="dropHint">Arrastra tus .mp3 aquí</div>
@@ -35,31 +39,31 @@
 
       <div class="sidebar-foot">
         <span id="count">0 canciones</span>
-        <button id="rescanBtn" title="Recargar manifest">⟳</button>
+        <button id="rescanBtn" title="Recargar manifest" aria-label="Recargar manifest"><i data-lucide="refresh-cw"></i></button>
       </div>
     </aside>
 
     <main class="main" id="dropZone">
       <div class="empty" id="emptyState">
-        <div class="empty-icon">🎵</div>
+        <div class="empty-icon"><i data-lucide="music"></i></div>
         <h1>Sin música todavía</h1>
-        <p>Pon tus <code>.mp3</code> en <code>./music/</code> y pulsa ⟳,<br />o arrastra archivos aquí.</p>
+        <p>Pon tus <code>.mp3</code> en <code>./music/</code> y pulsa <i data-lucide="refresh-cw" class="inline-icon"></i>,<br />o arrastra archivos aquí.</p>
         <code class="cmd">node tools/gen-manifest.js</code>
       </div>
 
       <div class="now-playing hidden" id="nowPlaying">
         <div class="cover-wrap">
-          <div class="cover" id="cover">♪</div>
+          <div class="cover" id="cover"><i data-lucide="music"></i></div>
         </div>
         <h2 id="trackTitle">—</h2>
         <p id="trackArtist">—</p>
-        <button class="fav" id="favBtn" title="Favorito (F)">♡</button>
+        <button class="fav" id="favBtn" title="Favorito (F)" aria-label="Favorito" aria-pressed="false"><i data-lucide="heart"></i></button>
       </div>
     </main>
 
     <footer class="player">
       <div class="track-mini">
-        <div class="cover-mini" id="coverMini">♪</div>
+        <div class="cover-mini" id="coverMini"><i data-lucide="music"></i></div>
         <div>
           <div class="t" id="miniTitle">Nada en reproducción</div>
           <div class="a" id="miniArtist">—</div>
@@ -68,11 +72,11 @@
 
       <div class="controls">
         <div class="buttons">
-          <button id="shuffleBtn" title="Aleatorio (S)">🔀</button>
-          <button id="prevBtn" title="Anterior (P)">⏮</button>
-          <button id="playBtn" class="play" title="Play/Pausa (Espacio)">▶</button>
-          <button id="nextBtn" title="Siguiente (N)">⏭</button>
-          <button id="repeatBtn" title="Repetir: off → todo → una">🔁<span id="repeatBadge"></span></button>
+          <button id="shuffleBtn" title="Aleatorio (S)" aria-label="Aleatorio" aria-pressed="false"><i data-lucide="shuffle"></i></button>
+          <button id="prevBtn" title="Anterior (P)" aria-label="Anterior"><i data-lucide="skip-back"></i></button>
+          <button id="playBtn" class="play" title="Play/Pausa (Espacio)" aria-label="Reproducir"><i data-lucide="play" class="i-play"></i><i data-lucide="pause" class="i-pause"></i></button>
+          <button id="nextBtn" title="Siguiente (N)" aria-label="Siguiente"><i data-lucide="skip-forward"></i></button>
+          <button id="repeatBtn" title="Repetir: off → todo → una" aria-label="Repetir" aria-pressed="false" data-mode="off"><i data-lucide="repeat" class="i-repeat"></i><i data-lucide="repeat-1" class="i-repeat-one"></i></button>
         </div>
         <div class="progress">
           <span id="cur">0:00</span>
@@ -82,7 +86,7 @@
       </div>
 
       <div class="volume">
-        <button id="muteBtn" title="Mute (M)">🔊</button>
+        <button id="muteBtn" title="Mute (M)" aria-label="Silenciar" data-level="high"><i data-lucide="volume-2" class="i-vol-high"></i><i data-lucide="volume-1" class="i-vol-low"></i><i data-lucide="volume-x" class="i-vol-muted"></i></button>
         <input type="range" id="vol" min="0" max="100" value="90" />
       </div>
 
@@ -90,7 +94,7 @@
     </footer>
   </div>
 
-  <script src="js/store.js"></script>
-  <script src="js/app.js"></script>
+  <script defer src="js/store.js"></script>
+  <script defer src="js/app.js"></script>
 </body>
 </html>
