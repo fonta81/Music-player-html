@@ -30,7 +30,7 @@ npx serve .
 
 Then open `http://localhost:8000`.
 
-> **Note:** Opening `index.html` directly via `file://` also works thanks to the `window.PRELOAD` fallback in `js/playlist.js`, but an HTTP server is recommended.
+> **Note:** Opening `index.html` directly via `file://` may work due to CORS restrictions on `fetch('music/manifest.json')`; an HTTP server is recommended.
 
 ### Option 2: Docker
 
@@ -64,7 +64,6 @@ The generator parses `Artist - Title.ext` from filenames. Files without the ` - 
 ├── css/
 │   └── style.css       # Styles
 ├── js/
-│   ├── playlist.js     # PRELOAD fallback (generated)
 │   ├── store.js        # localStorage persistence
 │   └── app.js          # Player logic
 ├── music/
