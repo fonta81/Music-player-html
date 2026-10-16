@@ -1,36 +1,40 @@
 # Music Player
 
-A static web music player. No npm, no bundler, no build step — just HTML, CSS, and vanilla JavaScript served as static files.
+A lightweight static web music player. Built with pure HTML, CSS, and vanilla JavaScript — no npm packages, bundlers, build steps, or runtime frameworks.
 
 ## Features
 
-- Plays tracks from `music/manifest.json` or local file uploads
-- Drag & drop, file picker, and File System Access API (Chrome/Edge) support
-- Search and favorites filter
-- Favorites, volume, and playback position persisted in `localStorage`
-- Shuffle and repeat modes (off → all → one)
-- Keyboard shortcuts
-- Media Session API (system-level media controls)
-- Responsive design with collapsible sidebar on mobile
+- **Playlist & Audio Sources**: Plays tracks indexed in `music/manifest.json` as well as local files added via drag & drop, file picker, or the File System Access API (Chrome/Edge).
+- **Search & Filter**: Real-time search across track titles and artists, plus a quick filter for favorite tracks.
+- **State Persistence**: Favorites, volume level, playback position, shuffle, and repeat settings persist in `localStorage`.
+- **Playback Modes**: Supports sequential playback, Fisher-Yates shuffle, and three-state repeat mode (`off` → `all` → `one`).
+- **Icons & UI**: Modern icon set powered by [Lucide Icons](https://lucide.dev/) (loaded via CDN with SRI validation).
+- **Accessibility & Shortcuts**: Accessible controls with ARIA states (`aria-label`, `aria-pressed`) and extensive keyboard shortcuts.
+- **System Integration**: Media Session API integration for OS/hardware-level media keys and lock screen controls.
+- **Responsive Layout**: Clean desktop layout with a collapsible sidebar for mobile devices.
 
 ## Requirements
 
-- Node.js (only for the manifest generator script)
-- A modern web browser
+- A modern web browser supporting ES6+.
+- Python 3, Node.js, or Docker (only to serve files locally via HTTP or to run the manifest generator).
 
 ## Getting Started
+
+Because modern browsers block `fetch('music/manifest.json')` over the `file://` protocol due to CORS security policies, serve the project using a local HTTP server or container.
 
 ### Option 1: Local HTTP Server
 
 ```bash
+# Using Python
 python3 -m http.server 8000
-# or
+
+# Or using Node
 npx serve .
 ```
 
-Then open `http://localhost:8000`.
+Open `http://localhost:8000` in your browser.
 
-> **Note:** Opening `index.html` directly via `file://` may work due to CORS restrictions on `fetch('music/manifest.json')`; an HTTP server is recommended.
+> **Note on `file://`:** Opening `index.html` directly from the filesystem (`file://`) will fail to fetch `music/manifest.json`. However, loading local audio files on the fly via drag-and-drop or the file picker will still function.
 
 ### Option 2: Docker
 
@@ -38,65 +42,72 @@ Then open `http://localhost:8000`.
 docker compose up --build
 ```
 
-Then open `http://localhost:8080`.
+Open `http://localhost:8080` in your browser.
 
 ## Adding Music
 
-1. Copy your audio files into the `music/` directory.
+1. Place your audio files inside the `music/` directory.
 2. Run the manifest generator:
    ```bash
    node tools/gen-manifest.js
    ```
-3. Click the ⟳ button in the UI to reload the playlist.
+3. Click the reload button (⟳) in the sidebar or refresh the page.
 
-### Supported Formats
+### Supported Audio Formats
 
-MP3, OGG, WAV, M4A, FLAC, OPUS
+MP3, OGG, WAV, M4A, FLAC, OPUS (`.mp3`, `.ogg`, `.wav`, `.m4a`, `.flac`, `.opus`).
 
-### Filename Convention
+### Filename Convention & Generator Details
 
-The generator parses `Artist - Title.ext` from filenames. Files without the ` - ` separator default to `Artista desconocido` as the artist.
+- The generator expects `Artist - Title.ext` format. Files without the ` - ` separator will use the filename as the title and default the artist to `Artista desconocido`.
+- **Preservation**: If an audio file's `src` already exists in `music/manifest.json`, custom metadata (such as `cover` URLs) is retained when re-running the generator.
+- **Scanning**: The generator scans `music/` directly (non-recursive). Audio placed in nested subdirectories (such as `music/canciones/`) should be cataloged manually or kept at the top level of `music/`.
 
 ## Project Structure
 
 ```
-├── index.html          # Entry point
+├── index.html          # Main HTML entry point & Lucide Icons CDN script
 ├── css/
-│   └── style.css       # Styles
+│   └── style.css       # Layout, theme variables, and custom styling
 ├── js/
-│   ├── store.js        # localStorage persistence
-│   └── app.js          # Player logic
+│   ├── store.js        # Simple localStorage state management
+│   └── app.js          # Player engine, UI event handlers, keyboard shortcuts
 ├── music/
-│   └── manifest.json   # Track list (generated, fetched at runtime)
+│   ├── manifest.json   # Track catalog (served via HTTP, read at runtime)
+│   └── canciones/      # Audio directory (sample/local tracks)
 ├── tools/
-│   └── gen-manifest.js # Manifest generator (Node ESM)
-├── Dockerfile          # nginx-based container
-└── compose.yaml        # Docker Compose config
+│   └── gen-manifest.js # Node.js ESM script to regenerate music/manifest.json
+├── Dockerfile          # Nginx-based static container image
+├── compose.yaml        # Docker Compose configuration
+├── AGENTS.md           # Instructions and gotchas for AI assistants
+└── README.md           # Project documentation
 ```
 
 ## Keyboard Shortcuts
 
-| Key         | Action                |
-|-------------|-----------------------|
-| `Space`     | Play / Pause          |
-| `←` / `→`   | Seek ±10 seconds      |
-| `↑` / `↓`   | Volume up / down      |
-| `N`         | Next track            |
-| `P`         | Previous track        |
-| `S`         | Toggle shuffle        |
-| `F`         | Toggle favorite       |
-| `M`         | Mute                  |
+| Key         | Action                      |
+|-------------|-----------------------------|
+| `Space`     | Play / Pause                |
+| `←` / `→`   | Seek backward / forward 10s |
+| `↑` / `↓`   | Volume up / down (5%)       |
+| `N`         | Next track                  |
+| `P`         | Previous track              |
+| `S`         | Toggle shuffle              |
+| `F`         | Toggle favorite             |
+| `M`         | Toggle mute                 |
+
+> Shortcuts are automatically ignored when focused inside text input fields (such as the search bar).
 
 ## Persistence
 
 Player state is stored in `localStorage` under the key `music-player-v1`:
 
-- `favorites` — Array of track IDs (src strings)
-- `volume` — Number between 0 and 1
-- `lastIndex` — Last played track index
-- `shuffle` — Boolean
-- `repeat` — `"off"` | `"all"` | `"one"`
+- `favorites` — Array of track source strings (`t.src`)
+- `volume` — Float between `0` and `1` (defaults to `0.9`)
+- `lastIndex` — Index of the last played track in the active playback order
+- `shuffle` — Boolean (`true` / `false`)
+- `repeat` — Current repeat mode (`"off"` | `"all"` | `"one"`)
 
 ## License
 
-See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
