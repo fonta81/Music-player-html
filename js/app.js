@@ -3,6 +3,11 @@
   const $ = (id) => document.getElementById(id);
   const audio = $('audio'), playlistEl = $('playlist'), searchEl = $('search');
   const playBtn = $('playBtn'), seek = $('seek'), vol = $('vol');
+  const emptyState = $('emptyState'), nowPlaying = $('nowPlaying'), countEl = $('count');
+  const trackTitle = $('trackTitle'), trackArtist = $('trackArtist');
+  const miniTitle = $('miniTitle'), miniArtist = $('miniArtist');
+  const coverEl = $('cover'), coverMiniEl = $('coverMini'), favBtn = $('favBtn');
+  const shuffleBtn = $('shuffleBtn'), repeatBtn = $('repeatBtn'), muteBtn = $('muteBtn');
   const s = store.load();
 
   let tracks = [];       // {id,title,artist,src,cover,local?}
@@ -41,8 +46,11 @@
       tracks = tracks.filter((t) => t.local); // sin manifest: conservar uploads
     }
     rebuildOrder();
-    render();
-    if (tracks.length && !audio.src) loadTrack(order[Math.min(s.lastIndex, order.length - 1)] ?? 0, false);
+    if (tracks.length && !audio.src) {
+      loadTrack(order[Math.min(s.lastIndex, order.length - 1)] ?? 0, false);
+    } else {
+      render();
+    }
   }
 
   function rebuildOrder() {
@@ -60,13 +68,12 @@
   function visibleTracks() {
     return tracks
       .map((t, i) => ({ ...t, idx: i }))
-      .filter((t) => (filter === 'favorites' ? isFav(t) : true))
-      .filter((t) => (t.title + ' ' + t.artist).toLowerCase().includes(query));
+      .filter((t) => (filter !== 'favorites' || isFav(t)) && (t.title + ' ' + t.artist).toLowerCase().includes(query));
   }
 
   function render() {
     const list = visibleTracks();
-    $('count').textContent = `${list.length} ${list.length === 1 ? 'canción' : 'canciones'}`;
+    countEl.textContent = `${list.length} ${list.length === 1 ? 'canción' : 'canciones'}`;
     playlistEl.innerHTML = '';
     const currentIdx = order[pos];
     list.forEach((t) => {
@@ -77,19 +84,19 @@
         <button class="like ${fav ? 'on' : ''}" title="Favorito" aria-label="Favorito" aria-pressed="${fav}">${iconHTML('heart')}</button>`;
       li.querySelector('.t').textContent = t.title;
       li.querySelector('.a').textContent = t.artist;
-      li.onclick = (e) => { if (!e.target.closest('.like')) playIndex(t.idx); };
+      li.onclick = (e) => { if (!e.target.closest('.like')) loadTrack(t.idx); };
       li.querySelector('.like').onclick = () => toggleFav(t);
       playlistEl.appendChild(li);
     });
-    $('emptyState').classList.toggle('hidden', tracks.length > 0);
-    $('nowPlaying').classList.toggle('hidden', tracks.length === 0);
+    emptyState.classList.toggle('hidden', tracks.length > 0);
+    nowPlaying.classList.toggle('hidden', tracks.length === 0);
     updateShuffleRepeatUI();
     refreshIcons();
   }
 
   function setCover(el, track) {
     if (track.cover) { el.style.backgroundImage = `url("${track.cover}")`; el.textContent = ''; }
-    else { el.style.backgroundImage = ''; el.innerHTML = iconHTML('music'); refreshIcons(); }
+    else { el.style.backgroundImage = ''; el.innerHTML = iconHTML('music'); }
   }
 
   function loadTrack(i, autoplay = true) {
@@ -98,11 +105,11 @@
     pos = Math.max(0, order.indexOf(i));
     s.lastIndex = pos; store.save();
     audio.src = t.src;
-    $('trackTitle').textContent = t.title;
-    $('trackArtist').textContent = t.artist;
-    $('miniTitle').textContent = t.title;
-    $('miniArtist').textContent = t.artist;
-    setCover($('cover'), t); setCover($('coverMini'), t);
+    trackTitle.textContent = t.title;
+    trackArtist.textContent = t.artist;
+    miniTitle.textContent = t.title;
+    miniArtist.textContent = t.artist;
+    setCover(coverEl, t); setCover(coverMiniEl, t);
     updateFavUI(t);
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist, album: 'Music Player' });
@@ -110,8 +117,6 @@
     render();
     if (autoplay) audio.play().catch(() => { });
   }
-
-  function playIndex(i) { loadTrack(i, true); }
 
   function toggleFav(t) {
     const id = idOf(t);
@@ -123,8 +128,8 @@
   }
   function updateFavUI(t) {
     const fav = isFav(t);
-    $('favBtn').classList.toggle('on', fav);   // el CSS rellena el corazón con .on
-    $('favBtn').setAttribute('aria-pressed', fav);
+    favBtn.classList.toggle('on', fav);   // el CSS rellena el corazón con .on
+    favBtn.setAttribute('aria-pressed', fav);
   }
 
   // ---------- Controles ----------
@@ -152,38 +157,38 @@
     if (audio.currentTime > 3) { audio.currentTime = 0; return; }
     if (order.length) loadTrack(order[(pos - 1 + order.length) % order.length]);
   };
-  $('shuffleBtn').onclick = () => {
+  shuffleBtn.onclick = () => {
     const cur = order[pos];
     s.shuffle = !s.shuffle; store.save();
     rebuildOrder();
     if (cur !== undefined) pos = order.indexOf(cur);
     render();
   };
-  $('repeatBtn').onclick = () => {
+  repeatBtn.onclick = () => {
     s.repeat = s.repeat === 'off' ? 'all' : s.repeat === 'all' ? 'one' : 'off';
     store.save(); updateShuffleRepeatUI();
   };
   function updateShuffleRepeatUI() {
-    $('shuffleBtn').classList.toggle('active', s.shuffle);
-    $('shuffleBtn').setAttribute('aria-pressed', s.shuffle);
-    $('repeatBtn').classList.toggle('active', s.repeat !== 'off');
-    $('repeatBtn').setAttribute('aria-pressed', s.repeat !== 'off');
-    $('repeatBtn').dataset.mode = s.repeat;   // off | all | one → el CSS muestra repeat o repeat-1
-    $('repeatBtn').title = `Repetir: ${s.repeat}`;
+    shuffleBtn.classList.toggle('active', s.shuffle);
+    shuffleBtn.setAttribute('aria-pressed', s.shuffle);
+    repeatBtn.classList.toggle('active', s.repeat !== 'off');
+    repeatBtn.setAttribute('aria-pressed', s.repeat !== 'off');
+    repeatBtn.dataset.mode = s.repeat;   // off | all | one → el CSS muestra repeat o repeat-1
+    repeatBtn.title = `Repetir: ${s.repeat}`;
   }
 
   vol.value = Math.round((s.volume ?? 0.9) * 100);
   audio.volume = s.volume ?? 0.9;
   vol.oninput = () => { audio.volume = vol.value / 100; s.volume = audio.volume; store.save(); updateMute(); };
-  $('muteBtn').onclick = () => { audio.muted = !audio.muted; updateMute(); };
+  muteBtn.onclick = () => { audio.muted = !audio.muted; updateMute(); };
   function updateMute() {
     const silent = audio.muted || audio.volume === 0;
-    $('muteBtn').dataset.level = silent ? 'muted' : audio.volume < 0.5 ? 'low' : 'high'; // el CSS elige volume-x / volume-1 / volume-2
-    $('muteBtn').setAttribute('aria-label', silent ? 'Activar sonido' : 'Silenciar');
+    muteBtn.dataset.level = silent ? 'muted' : audio.volume < 0.5 ? 'low' : 'high'; // el CSS elige volume-x / volume-1 / volume-2
+    muteBtn.setAttribute('aria-label', silent ? 'Activar sonido' : 'Silenciar');
   }
   updateMute();
 
-  $('favBtn').onclick = () => { const t = tracks[order[pos]]; if (t) toggleFav(t); };
+  favBtn.onclick = () => { const t = tracks[order[pos]]; if (t) toggleFav(t); };
 
   // Filtros + búsqueda
   document.querySelectorAll('.filter').forEach((b) => {
@@ -209,14 +214,18 @@
         local: true,
       });
     });
-    if (audios.length) { rebuildOrder(); render(); loadTrack(tracks.length - audios.length, true); }
+    if (audios.length) { rebuildOrder(); loadTrack(tracks.length - audios.length, true); }
   }
 
   // Drag & drop
   const dz = $('dropZone'), hint = $('dropHint');
   ['dragenter', 'dragover'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); hint.classList.add('over'); }));
-  ['dragleave', 'drop'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); hint.classList.remove('over'); }));
-  dz.addEventListener('drop', (e) => addFiles(e.dataTransfer.files));
+  dz.addEventListener('dragleave', (e) => { e.preventDefault(); hint.classList.remove('over'); });
+  dz.addEventListener('drop', (e) => {
+    e.preventDefault();
+    hint.classList.remove('over');
+    addFiles(e.dataTransfer.files);
+  });
 
   // File System Access: abrir carpeta ./music
   $('folderBtn').onclick = async () => {

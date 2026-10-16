@@ -1,6 +1,6 @@
 // Genera music/manifest.json escaneando ./music/*.mp3|ogg|wav|m4a|flac|opus
 // Uso: node tools/gen-manifest.js
-import { readdirSync, writeFileSync, existsSync } from 'node:fs';
+import { readdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,7 +12,7 @@ const AUDIO = /\.(mp3|ogg|wav|m4a|flac|opus)$/i;
 let prev = [];
 try {
   if (existsSync(out)) {
-    const raw = JSON.parse((await import('node:fs')).readFileSync(out, 'utf8'));
+    const raw = JSON.parse(readFileSync(out, 'utf8'));
     prev = Array.isArray(raw) ? raw : raw.tracks || [];
   }
 } catch {}

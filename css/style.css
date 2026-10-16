@@ -6,7 +6,6 @@
   --muted: #b3b3b3;
   --accent: #1db954;
   --accent-hover: #1ed760;
-  --radius: 12px;
   --icon-sm: 16px;
   --icon-md: 20px;
   --icon-lg: 24px;
@@ -194,6 +193,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: rgba(255,255,255,.85);
   background: linear-gradient(135deg, #1db954, #191414);
   background-size: cover;
   background-position: center;
@@ -203,8 +203,6 @@ body {
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0,0,0,.5);
 }
-.cover,
-.cover-mini { color: rgba(255,255,255,.85); }
 .cover > :is(i, svg) { width: 96px; height: 96px; stroke-width: 1.25; }
 .cover-mini > :is(i, svg) { width: var(--icon-md); height: var(--icon-md); }
 .now-playing h2 { margin: 8px 0 4px; }
