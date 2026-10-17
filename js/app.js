@@ -146,9 +146,12 @@
     if (audio.duration) seek.value = Math.round((audio.currentTime / audio.duration) * 1000);
   };
   audio.onended = () => {
-    if (s.repeat === 'one') { audio.currentTime = 0; audio.play(); return; }
+    if (s.repeat === 'one' || !order.length) return;
+    if (s.repeat === 'all') {
+      loadTrack(order[(pos + 1) % order.length]);
+      return;
+    }
     if (pos < order.length - 1) loadTrack(order[pos + 1]);
-    else if (s.repeat === 'all' && order.length) loadTrack(order[0]);
   };
   seek.oninput = () => { if (audio.duration) audio.currentTime = (seek.value / 1000) * audio.duration; };
 
@@ -169,12 +172,20 @@
     store.save(); updateShuffleRepeatUI();
   };
   function updateShuffleRepeatUI() {
+    const repeatLabels = {
+      off: { title: 'Repetir: desactivado', ariaLabel: 'Repetición desactivada' },
+      all: { title: 'Repetir: toda la lista', ariaLabel: 'Repetir toda la lista' },
+      one: { title: 'Repetir: pista actual', ariaLabel: 'Repetir pista actual' },
+    };
+    const labels = repeatLabels[s.repeat] || repeatLabels.off;
+    audio.loop = s.repeat === 'one';
     shuffleBtn.classList.toggle('active', s.shuffle);
     shuffleBtn.setAttribute('aria-pressed', s.shuffle);
     repeatBtn.classList.toggle('active', s.repeat !== 'off');
     repeatBtn.setAttribute('aria-pressed', s.repeat !== 'off');
     repeatBtn.dataset.mode = s.repeat;   // off | all | one → el CSS muestra repeat o repeat-1
-    repeatBtn.title = `Repetir: ${s.repeat}`;
+    repeatBtn.title = labels.title;
+    repeatBtn.setAttribute('aria-label', labels.ariaLabel);
   }
 
   vol.value = Math.round((s.volume ?? 0.9) * 100);
