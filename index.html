@@ -5,27 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Music Player</title>
   <link rel="stylesheet" href="css/style.css" />
+  <!-- Tipografía Inter (Google Fonts) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <!-- Lucide Icons (UMD, versión fijada + SRI). Los scripts con defer se ejecutan en orden: lucide → store → app -->
   <script defer src="https://cdn.jsdelivr.net/npm/lucide@1.48.0/dist/umd/lucide.min.js"
           integrity="sha384-Hh7C333mXel+qppGoFs4qAOXp7h67eur4XsQVF2bvHAM3MQ4DX4cQI7oRCzb98J4"
           crossorigin="anonymous"></script>
+<base target="_blank">
 </head>
 <body>
+  <!-- Layout general: grid de 3 áreas → "side" | "main" y "player" a todo lo ancho (ver .app en style.css) -->
   <div class="app">
+    <!-- ==================== Sidebar: logo, búsqueda, filtros, acciones y playlist ==================== -->
     <aside class="sidebar" id="sidebar">
       <div class="logo"><i data-lucide="music-2"></i><span>Music Player</span></div>
 
+      <!-- Búsqueda en vivo por título/artista; js/app.js la escucha con oninput -->
       <div class="search-box">
         <input type="search" id="search" placeholder="Buscar canción o artista..." autocomplete="off" />
       </div>
 
+      <!-- Filtros mutuamente excluyentes: "Todas" o solo "Favoritas" -->
       <nav class="filters">
         <button class="filter active" data-filter="all">Todas</button>
         <button class="filter" data-filter="favorites"><i data-lucide="heart"></i><span>Favoritas</span></button>
       </nav>
 
+      <!-- Acciones para añadir música: selector de archivos, carpeta local
+           (File System Access, Chrome/Edge) y botón de ayuda -->
       <div class="actions">
         <label class="btn btn-primary" for="fileInput"><i data-lucide="plus"></i><span>Añadir música</span></label>
         <input type="file" id="fileInput" accept="audio/*" multiple hidden />
@@ -33,17 +41,23 @@
         <button class="btn btn-ghost" id="genHint" title="Cómo agregar archivos a ./music" aria-label="Ayuda: cómo agregar archivos"><i data-lucide="circle-help"></i></button>
       </div>
 
+      <!-- Aviso de arrastrar y soltar; se ilumina (.over) al arrastrar sobre la zona de drop -->
       <div class="drop-hint" id="dropHint">Arrastra tus .mp3 aquí</div>
 
+      <!-- Lista de pistas: se rellena dinámicamente en render() (js/app.js) -->
       <ul class="playlist" id="playlist"></ul>
 
+      <!-- Pie: contador de pistas visibles + recarga de music/manifest.json -->
       <div class="sidebar-foot">
         <span id="count">0 canciones</span>
         <button id="rescanBtn" title="Recargar manifest" aria-label="Recargar manifest"><i data-lucide="refresh-cw"></i></button>
       </div>
     </aside>
 
+    <!-- ==================== Main: estado vacío o tarjeta "sonando ahora" ==================== -->
+    <!-- Esta zona es también el dropZone del drag & drop -->
     <main class="main" id="dropZone">
+      <!-- Estado vacío (sin pistas); se oculta con la clase .hidden cuando hay música -->
       <div class="empty" id="emptyState">
         <div class="empty-icon"><i data-lucide="music"></i></div>
         <h1>Sin música todavía</h1>
@@ -51,6 +65,7 @@
         <code class="cmd">node tools/gen-manifest.js</code>
       </div>
 
+      <!-- Tarjeta de la pista actual: portada, título, artista y botón de favorito -->
       <div class="now-playing hidden" id="nowPlaying">
         <div class="cover-wrap">
           <div class="cover" id="cover"><i data-lucide="music"></i></div>
@@ -61,7 +76,9 @@
       </div>
     </main>
 
+    <!-- ==================== Barra de reproducción (footer) ==================== -->
     <footer class="player">
+      <!-- Mini tarjeta: portada pequeña + título/artista de la pista actual -->
       <div class="track-mini">
         <div class="cover-mini" id="coverMini"><i data-lucide="music"></i></div>
         <div>
@@ -70,30 +87,38 @@
         </div>
       </div>
 
+      <!-- Controles centrales: shuffle / prev / play / next / repeat + barra de progreso -->
       <div class="controls">
         <div class="buttons">
           <button id="shuffleBtn" title="Aleatorio (S)" aria-label="Aleatorio" aria-pressed="false"><i data-lucide="shuffle"></i></button>
           <button id="prevBtn" title="Anterior (P)" aria-label="Anterior"><i data-lucide="skip-back"></i></button>
+          <!-- .i-play / .i-pause se alternan con la clase .is-playing (ver CSS) -->
           <button id="playBtn" class="play" title="Play/Pausa (Espacio)" aria-label="Reproducir"><i data-lucide="play" class="i-play"></i><i data-lucide="pause" class="i-pause"></i></button>
           <button id="nextBtn" title="Siguiente (N)" aria-label="Siguiente"><i data-lucide="skip-forward"></i></button>
+          <!-- data-mode: off | all | one → el CSS muestra "repeat" o "repeat-1" -->
           <button id="repeatBtn" title="Repetir: off → todo → una" aria-label="Repetir" aria-pressed="false" data-mode="off"><i data-lucide="repeat" class="i-repeat"></i><i data-lucide="repeat-1" class="i-repeat-one"></i></button>
         </div>
         <div class="progress">
           <span id="cur">0:00</span>
+          <!-- Seek mapeado a 0–1000 para evitar floating point en js/app.js -->
           <input type="range" id="seek" min="0" max="1000" value="0" />
           <span id="dur">0:00</span>
         </div>
       </div>
 
+      <!-- Volumen: mute + slider; data-level (high|low|muted) elige el icono en el CSS -->
       <div class="volume">
         <button id="muteBtn" title="Mute (M)" aria-label="Silenciar" data-level="high"><i data-lucide="volume-2" class="i-vol-high"></i><i data-lucide="volume-1" class="i-vol-low"></i><i data-lucide="volume-x" class="i-vol-muted"></i></button>
         <input type="range" id="vol" min="0" max="100" value="90" />
       </div>
 
+      <!-- Elemento <audio> real; todo lo demás es UI sobre este reproductor nativo -->
       <audio id="audio" preload="metadata"></audio>
     </footer>
   </div>
 
+  <!-- OJO al orden: store.js define el global `store` que app.js lee al arrancar.
+       Los tres scripts usan defer, así que se ejecutan en este mismo orden. -->
   <script defer src="js/store.js"></script>
   <script defer src="js/app.js"></script>
 </body>

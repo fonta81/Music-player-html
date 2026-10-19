@@ -1,3 +1,11 @@
+/* ============================================================
+   Music Player — hoja de estilos
+   - Tema oscuro basado en variables CSS (--bg, --accent, ...).
+   - Layout: grid de 3 áreas → sidebar | main, y barra de player a
+     todo lo ancho (ver .app).
+   - Iconos Lucide: se dimensionan tanto el <i data-lucide> como el
+     <svg> resultante para evitar saltos de layout al cargar el CDN.
+   ============================================================ */
 :root {
   --bg: #121212;
   --panel: #1a1a1a;
@@ -25,6 +33,7 @@ svg.lucide {
   stroke-width: 2;
   pointer-events: none; /* el click siempre lo recibe el <button> */
 }
+/* Icono en línea dentro de texto (p.ej. el ↻ del estado vacío) */
 .inline-icon,
 svg.lucide.inline-icon,
 i[data-lucide].inline-icon { width: 1em; height: 1em; vertical-align: -0.15em; }
@@ -36,6 +45,9 @@ body {
   height: 100vh;
   overflow: hidden;
 }
+/* ---------- Layout general ----------
+   Grid de 3 áreas: sidebar a la izquierda, main a la derecha y la barra
+   de reproducción ocupando todo el ancho abajo. */
 .app {
   display: grid;
   grid-template-rows: 1fr auto;
@@ -43,7 +55,7 @@ body {
   grid-template-areas: "side main" "player player";
   height: 100vh;
 }
-/* Sidebar */
+/* ==================== Sidebar ==================== */
 .sidebar {
   grid-area: side;
   background: var(--panel);
@@ -56,6 +68,7 @@ body {
 }
 .logo { font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
 .logo > :is(i, svg) { width: var(--icon-lg); height: var(--icon-lg); color: var(--accent); }
+/* Campo de búsqueda; el borde de foco usa el color de acento */
 .search-box input {
   width: 100%;
   padding: 10px 12px;
@@ -66,6 +79,7 @@ body {
   outline: none;
 }
 .search-box input:focus { border-color: var(--accent); }
+/* Píldoras de filtro: "Todas" / "Favoritas" */
 .filters { display: flex; gap: 8px; }
 .filter {
   flex: 1;
@@ -80,6 +94,7 @@ body {
 }
 .filter > :is(i, svg) { width: var(--icon-sm); height: var(--icon-sm); }
 .filter:hover:not(.active) { color: var(--text); border-color: #555; }
+/* Corazón relleno cuando el filtro de favoritas está activo */
 .filter[data-filter="favorites"].active svg { fill: currentColor; }
 .filter.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -103,6 +118,7 @@ body {
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-ghost:hover { border-color: var(--accent); }
 #genHint { padding: 9px 11px; }
+/* Aviso de drag & drop; la clase .over la añade js/app.js al arrastrar */
 .drop-hint {
   border: 1px dashed #444;
   border-radius: 8px;
@@ -112,6 +128,7 @@ body {
   font-size: 0.8rem;
 }
 .drop-hint.over { border-color: var(--accent); color: var(--accent); background: rgba(29,185,84,.08); }
+/* Lista de pistas: scrollable, con items generados dinámicamente por render() */
 .playlist {
   list-style: none;
   margin: 0;
@@ -132,7 +149,9 @@ body {
   gap: 8px;
 }
 .playlist li:hover { background: var(--panel2); }
+/* Pista que suena: fondo distinto + barra de acento a la izquierda */
 .playlist li.active { background: #2a2a2a; border-left: 3px solid var(--accent); }
+/* Elipsis en título/artista para que no rompan el layout */
 .playlist .meta { min-width: 0; }
 .playlist .t,
 .playlist .a,
@@ -143,6 +162,7 @@ body {
 }
 .playlist .t { font-weight: 500; }
 .playlist .a { font-size: 0.8rem; color: var(--muted); }
+/* Botón corazón de cada item + botones redondos de la barra de player */
 .playlist .like,
 .buttons button,
 .volume button {
@@ -158,6 +178,7 @@ body {
 }
 .playlist .like > :is(i, svg) { width: var(--icon-sm); height: var(--icon-sm); }
 .playlist .like:hover { color: var(--text); transform: scale(1.15); }
+/* Favorito activo: acento + corazón relleno */
 .playlist .like.on { color: var(--accent); }
 .playlist .like.on svg { fill: currentColor; }
 .sidebar-foot { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 0.8rem; }
@@ -169,7 +190,7 @@ body {
 }
 .sidebar-foot button > :is(i, svg) { width: var(--icon-sm); height: var(--icon-sm); }
 .sidebar-foot button:hover { border-color: var(--accent); color: var(--accent); }
-/* Main */
+/* ==================== Main ==================== */
 .main {
   grid-area: main;
   display: flex;
@@ -180,14 +201,18 @@ body {
   overflow-y: auto;
   min-height: 0;
 }
+/* Estado vacío (sin pistas en el catálogo) */
 .empty { text-align: center; color: var(--muted); }
 .empty-icon { display: flex; justify-content: center; margin-bottom: 8px; color: var(--accent); }
 .empty-icon > :is(i, svg) { width: 56px; height: 56px; stroke-width: 1.5; }
 .empty code { background: #222; padding: 2px 8px; border-radius: 6px; color: var(--text); }
 .empty .cmd { display: inline-block; margin-top: 12px; }
+/* Tarjeta "sonando ahora"; la clase .hidden la alterna con el estado vacío */
 .now-playing { text-align: center; max-width: 420px; width: 100%; }
 .hidden { display: none !important; }
 .cover-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+/* Portadas: degradado de acento por defecto; con imagen se vía background-image
+   (lo asigna setCover() en js/app.js) */
 .cover,
 .cover-mini {
   display: flex;
@@ -207,6 +232,7 @@ body {
 .cover-mini > :is(i, svg) { width: var(--icon-md); height: var(--icon-md); }
 .now-playing h2 { margin: 8px 0 4px; }
 .now-playing p { margin: 0 0 8px; color: var(--muted); }
+/* Botón favorito grande (tipo píldora) */
 .fav {
   background: none; border: 1px solid #333; border-radius: 20px; color: var(--text);
   padding: 8px 18px; cursor: pointer;
@@ -217,7 +243,7 @@ body {
 .fav:hover { border-color: var(--muted); transform: scale(1.05); }
 .fav.on { color: var(--accent); border-color: var(--accent); }
 .fav.on svg { fill: currentColor; }
-/* Player bar */
+/* ==================== Barra de reproducción (footer) ==================== */
 .player {
   grid-area: player;
   background: #181818;
@@ -228,14 +254,17 @@ body {
   gap: 16px;
   padding: 12px 20px;
 }
+/* Mini tarjeta de la pista actual (columna izquierda) */
 .track-mini { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .cover-mini {
   width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;
 }
 .track-mini .t { font-size: 0.9rem; font-weight: 500; max-width: 220px; }
 .track-mini .a { font-size: 0.8rem; color: var(--muted); }
+/* Controles centrales: botones + progreso */
 .controls { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .buttons { display: flex; align-items: center; gap: 12px; }
+/* Botones redondos de la barra; el estado :hover/:active da feedback inmediato */
 .buttons button,
 .volume button {
   color: var(--muted);
@@ -249,6 +278,7 @@ body {
 .volume button:hover { color: var(--text); transform: scale(1.1); }
 .buttons button:active,
 .volume button:active { transform: scale(.94); }
+/* Anillo de foco visible para navegación por teclado */
 .buttons button:focus-visible,
 .volume button:focus-visible,
 .playlist .like:focus-visible,
@@ -287,12 +317,17 @@ body {
 #muteBtn[data-level="muted"] .i-vol-high { display: none; }
 #muteBtn[data-level="low"] .i-vol-low { display: inline-block; }
 #muteBtn[data-level="muted"] .i-vol-muted { display: inline-block; }
+/* Barra de progreso: tiempos a los lados + slider flexible */
 .progress { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 560px; }
 .progress span { font-size: 0.75rem; color: var(--muted); min-width: 38px; text-align: center; }
 input[type="range"] { accent-color: var(--accent); cursor: pointer; }
 #seek { flex: 1; }
+/* Volumen (columna derecha) */
 .volume { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
 #vol { width: 110px; }
+/* ==================== Móvil (<= 860px) ====================
+   La sidebar se convierte en panel inferior deslizable (se abre tocando el logo)
+   y la barra de player se apila en una sola columna. */
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; grid-template-areas: "main" "player"; }
   .sidebar {
