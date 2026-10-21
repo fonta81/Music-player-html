@@ -11,7 +11,7 @@ A lightweight static web music player. Built with pure HTML, CSS, and vanilla Ja
 - **Icons & UI**: Modern icon set powered by [Lucide Icons](https://lucide.dev/) (loaded via CDN with SRI validation).
 - **Accessibility & Shortcuts**: Accessible controls with ARIA states (`aria-label`, `aria-pressed`) and extensive keyboard shortcuts.
 - **System Integration**: Media Session API integration for OS/hardware-level media keys and lock screen controls.
-- **Responsive Layout**: Clean desktop layout with a collapsible sidebar for mobile devices.
+- **Responsive Layout**: Clean desktop layout with a collapsible mobile sidebar and a fixed bottom playback bar that keeps every playback control visible on phones.
 
 ## Requirements
 
