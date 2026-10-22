@@ -16,8 +16,8 @@ A lightweight static web music player. Built with pure HTML, CSS, and vanilla Ja
 ## Requirements
 
 - A modern web browser supporting ES2020+ (the code relies on optional chaining, nullish coalescing, and async/await).
-- Python 3, Node.js, or Docker (only to serve files locally via HTTP or to run the manifest generator).
-- Node.js 22+ if you plan to run the manifest generator — `tools/gen-manifest.js` is an ESM script and this repo has no `package.json`, so it relies on Node's ESM syntax detection. Older versions throw a `SyntaxError` unless you invoke it with `node --experimental-default-type=module tools/gen-manifest.js`.
+- Python 3 to serve files locally, Node.js to run the manifest generator, or Docker to run the container.
+- Node.js with ESM syntax detection (for example, Node.js 22.7+) to run the manifest generator with the command below. On older versions, use `node --experimental-default-type=module tools/gen-manifest.js`.
 
 ## Getting Started
 
@@ -36,6 +36,8 @@ npx serve .
 Open `http://localhost:8000` in your browser.
 
 > **Note on `file://`:** Opening `index.html` directly from the filesystem (`file://`) will fail to fetch `music/manifest.json`. However, loading local audio files on the fly via drag-and-drop or the file picker will still function.
+
+The **Open folder** button uses the File System Access API, which is available in supported browsers such as Chrome and Edge on localhost or HTTPS. It reads audio files directly inside the selected folder (not its subfolders). The file picker and drag-and-drop are alternatives in other browsers.
 
 ### Option 2: Docker
 
@@ -77,7 +79,7 @@ Open `http://localhost:8080` in your browser.
 
 ### Supported Audio Formats
 
-MP3, OGG, WAV, M4A, FLAC, OPUS (`.mp3`, `.ogg`, `.wav`, `.m4a`, `.flac`, `.opus`). The same extension regex lives in two places — `tools/gen-manifest.js` and `js/app.js` (`AUDIO_EXT`) — so both must be updated when changing supported formats.
+The manifest generator recognizes MP3, OGG, WAV, M4A, FLAC, and OPUS (`.mp3`, `.ogg`, `.wav`, `.m4a`, `.flac`, `.opus`). Local files added with the file picker, drag-and-drop, or folder picker are also accepted when the browser identifies them as audio; actual playback depends on browser codec support. The extension regex lives in `tools/gen-manifest.js` and `js/app.js` (`AUDIO_EXT`), so update both if adding formats that may not have a reliable audio MIME type.
 
 ### Filename Convention & Generator Details
 
@@ -106,7 +108,7 @@ MP3, OGG, WAV, M4A, FLAC, OPUS (`.mp3`, `.ogg`, `.wav`, `.m4a`, `.flac`, `.opus`
 └── README.md           # Project documentation
 ```
 
-- `music/canciones/` is listed in `.gitignore`, so a fresh clone ships an **empty playlist** even though `music/manifest.json` is tracked. Drop your own files into `music/` to get started.
+- `music/canciones/` is listed in `.gitignore`, so local audio there is not included in a clone. The tracked `music/manifest.json` currently contains an example entry for `music/songExample.mp3`; unless that file exists, it cannot be played. Add your own files directly to `music/` and run the generator to replace the example entry with the available tracks (or an empty list if there are none).
 - The `Dockerfile` copies only `index.html`, `css/`, `js/`, and `music/` — there is no bind mount and `tools/` is not shipped. After adding tracks, rebuild with `docker compose up --build`.
 
 ## Keyboard Shortcuts
