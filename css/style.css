@@ -106,7 +106,6 @@ body {
   border: 1px solid #333;
   background: var(--panel2);
   color: var(--text);
-  text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;

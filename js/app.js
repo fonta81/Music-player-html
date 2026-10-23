@@ -16,6 +16,17 @@
   // favorites, volume, lastIndex, shuffle y repeat sobreviven al recargar la página.
   const s = store.load();
 
+  const AUDIO_EXTENSIONS = ['mp3', 'ogg', 'wav', 'm4a', 'flac', 'opus'];
+  const AUDIO_EXT = new RegExp(`\\.(${AUDIO_EXTENSIONS.join('|')})$`, 'i');
+  const isAudio = (file) => !!(file && (file.type?.startsWith('audio/') || AUDIO_EXT.test(file.name || '')));
+  const buildLocalTrack = (file) => ({
+    title: file.name.replace(/\.[^.]+$/, '') || 'Sin título',
+    artist: 'Archivo local',
+    src: URL.createObjectURL(file),
+    cover: '',
+    local: true,
+  });
+
   // ---------- Modelo ----------
   let tracks = [];       // [{title, artist, src, cover, local?}]; la identidad de la pista es su `src`
   let order = [];        // índices a `tracks` en orden de reproducción (aleatorio o secuencial)
@@ -135,12 +146,15 @@
     pos = Math.max(0, order.indexOf(i));
     s.lastIndex = pos; store.save();
     audio.src = t.src;
-    trackTitle.textContent = t.title;
-    trackArtist.textContent = t.artist;
-    miniTitle.textContent = t.title;
-    miniArtist.textContent = t.artist;
-    setCover(coverEl, t); setCover(coverMiniEl, t);
-    updateFavUI(t);
+    const syncTrackUI = (track) => {
+      trackTitle.textContent = track.title;
+      trackArtist.textContent = track.artist;
+      miniTitle.textContent = track.title;
+      miniArtist.textContent = track.artist;
+      setCover(coverEl, track); setCover(coverMiniEl, track);
+      updateFavUI(track);
+    };
+    syncTrackUI(t);
     // Integración con el sistema operativo: teclas multimedia y pantalla de bloqueo.
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist, album: 'Music Player' });
@@ -158,8 +172,12 @@
     if (i >= 0) s.favorites.splice(i, 1); else s.favorites.push(id);
     store.save(); render();
     const cur = tracks[order[pos]];
-    if (cur && idOf(cur) === id) updateFavUI(cur);
+    if (cur && idOf(cur) === id) updateCurrentFavUI();
   }
+  const updateCurrentFavUI = () => {
+    const cur = tracks[order[pos]];
+    if (cur) updateFavUI(cur);
+  };
   function updateFavUI(t) {
     const fav = isFav(t);
     favBtn.classList.toggle('on', fav);   // el CSS rellena el corazón con .on
@@ -258,26 +276,16 @@
   searchEl.oninput = () => { query = searchEl.value.trim().toLowerCase(); render(); };
 
   // ---------- Añadir archivos ----------
-  // OJO: esta regex está DUPLICADA en tools/gen-manifest.js; al cambiar los formatos
-  // soportados hay que actualizar ambas.
-  const AUDIO_EXT = /\.(mp3|ogg|wav|m4a|flac|opus)$/i;
-  // Acepta por MIME (audio/*) o por extensión (para archivos sin type fiable).
-  const isAudio = (f) => f && (f.type?.startsWith('audio/') || AUDIO_EXT.test(f.name || ''));
   $('fileInput').onchange = (e) => addFiles(e.target.files);
   // Convierte File(s) en pistas locales (blob URL, no persisten al recargar) y
   // reproduce la primera de las añadidas.
   function addFiles(files) {
     const audios = [...files].filter(isAudio);
-    audios.forEach((f) => {
-      tracks.push({
-        title: f.name.replace(/\.[^.]+$/, ''),
-        artist: 'Archivo local',
-        src: URL.createObjectURL(f),
-        cover: '',
-        local: true,
-      });
-    });
-    if (audios.length) { rebuildOrder(); loadTrack(tracks.length - audios.length, true); }
+    audios.forEach((file) => tracks.push(buildLocalTrack(file)));
+    if (audios.length) {
+      rebuildOrder();
+      loadTrack(tracks.length - audios.length, true);
+    }
   }
 
   // ---------- Drag & drop ----------
