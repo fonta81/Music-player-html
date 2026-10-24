@@ -1,10 +1,8 @@
-// Persistencia simple en localStorage.
-// OJO al orden de carga: index.html incluye este ANTES que js/app.js, porque
-// app.js lee el objeto global `store` al arrancar su IIFE.
+// Persistencia en localStorage. Se carga ANTES que app.js.
 const store = {
-  KEY: 'music-player-v1', // clave única en localStorage para todo el estado del reproductor
+  KEY: 'music-player-v1',
   state: { favorites: [], volume: 0.9, lastIndex: 0, shuffle: false, repeat: 'off' },
-  // Mezcla lo guardado (si existe) sobre los valores por defecto; nunca lanza excepción.
+  // Carga estado guardado sobre los defaults
   load() {
     try {
       const raw = localStorage.getItem(this.KEY);

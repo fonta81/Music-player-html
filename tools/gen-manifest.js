@@ -1,19 +1,16 @@
-// Genera music/manifest.json escaneando ./music/*.mp3|ogg|wav|m4a|flac|opus
-// Uso: node tools/gen-manifest.js
+// Genera manifest.json desde ./music/   Uso: node tools/gen-manifest.js
 import { readdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Raíz del repo = directorio padre de tools/, así funciona desde cualquier CWD.
+// Raíz del repo
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const musicDir = join(root, 'music');
 const out = join(musicDir, 'manifest.json');
-// OJO: esta regex está DUPLICADA en js/app.js (const AUDIO_EXT); al cambiar los
-// formatos soportados hay que actualizar ambas.
+// OJO: regex duplicada en js/app.js (AUDIO_EXT)
 const AUDIO = /\.(mp3|ogg|wav|m4a|flac|opus)$/i;
 
-// Lee el manifest anterior para reutilizar la metadata (title/artist/cover)
-// de los src que sigan existiendo en disco.
+// Reutiliza metadata del manifest anterior
 let prev = [];
 try {
   if (existsSync(out)) {
@@ -22,12 +19,11 @@ try {
   }
 } catch { }
 
-// Solo archivos de audio SUELTOS en music/ (readdirSync sin recursión), ordenados.
+// Archivos de audio en music/ (sin recursión)
 const files = readdirSync(musicDir).filter((f) => AUDIO.test(f)).sort();
 const bySrc = new Map(prev.map((t) => [t.src, t]));
 
-// Por cada archivo: conservar la entrada previa si existe; si no, derivar
-// título/artista del nombre con la convención "Artista - Título.ext".
+// Conserva entrada previa o deriva de "Artista - Título.ext"
 const tracks = files.map((f) => {
   const src = `music/${f}`;
   if (bySrc.has(src)) return bySrc.get(src);
@@ -41,6 +37,6 @@ const tracks = files.map((f) => {
   };
 });
 
-// Escritura destructiva: el archivo anterior se sobrescribe completo.
+// Sobrescribe manifest.json
 writeFileSync(out, JSON.stringify(tracks, null, 2) + '\n');
 console.log(`manifest.json: ${tracks.length} canciones`);

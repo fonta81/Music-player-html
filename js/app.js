@@ -1,6 +1,4 @@
-/* Reproductor: fuente ./music/manifest.json + upload + File System Access.
-   Todo vive dentro de una IIFE para no exponer nada al ámbito global.
-   Dependencia: el objeto global `store` (js/store.js), cargado ANTES por index.html. */
+/* Reproductor de música. IIFE, depende del global `store` (js/store.js). */
 (() => {
   // ---------- Referencias al DOM ----------
   const $ = (id) => document.getElementById(id);
@@ -12,8 +10,7 @@
   const coverEl = $('cover'), coverMiniEl = $('coverMini'), favBtn = $('favBtn');
   const shuffleBtn = $('shuffleBtn'), repeatBtn = $('repeatBtn'), muteBtn = $('muteBtn');
 
-  // Estado persistido en localStorage (ver store.js):
-  // favorites, volume, lastIndex, shuffle y repeat sobreviven al recargar la página.
+  // Estado persistido (ver store.js)
   const s = store.load();
 
   const AUDIO_EXTENSIONS = ['mp3', 'ogg', 'wav', 'm4a', 'flac', 'opus'];
@@ -28,39 +25,36 @@
   });
 
   // ---------- Modelo ----------
-  let tracks = [];       // [{title, artist, src, cover, local?}]; la identidad de la pista es su `src`
-  let order = [];        // índices a `tracks` en orden de reproducción (aleatorio o secuencial)
-  let pos = 0;           // posición actual DENTRO de `order` (no índice directo a `tracks`)
-  let filter = 'all', query = ''; // filtro activo y texto de búsqueda (no persisten)
+  let tracks = [];       // [{title, artist, src, cover, local?}]
+  let order = [];        // índices en orden de reproducción
+  let pos = 0;           // posición actual en `order`
+  let filter = 'all', query = '';
 
   // ---------- Iconos (Lucide) ----------
-  // Convierte los <i data-lucide="..."> pendientes en <svg>. Es idempotente y barato,
-  // por eso se invoca de nuevo tras cada render() dinámico de la playlist.
+  // Refresca iconos Lucide (<i data-lucide> → <svg>)
   const refreshIcons = () => { if (window.lucide) window.lucide.createIcons(); };
-  // HTML de un icono aún pendiente de conversión (será reemplazado por refreshIcons()).
+  // HTML de un icono pendiente de conversión
   const iconHTML = (name, cls = '') => `<i data-lucide="${name}"${cls ? ` class="${cls}"` : ''}></i>`;
 
   // ---------- Utilidades ----------
-  // Segundos → "m:ss". Devuelve "0:00" si aún no hay metadatos (NaN/Infinity).
+  // Segundos → "m:ss"
   const fmt = (t) => {
     if (!isFinite(t) || t == null) return '0:00';
     const m = Math.floor(t / 60), sec = Math.floor(t % 60);
     return `${m}:${String(sec).padStart(2, '0')}`;
   };
-  // La identidad de una pista es su `src`. Ojo: renombrar/mover un archivo dentro
-  // de ./music invalida silenciosamente los favoritos guardados con ese src.
+  // Identidad de pista = su `src`
   const idOf = (t) => t.src;
   const isFav = (t) => s.favorites.includes(idOf(t));
 
   // ---------- Carga ----------
-  // Descarga music/manifest.json y reconstruye el catálogo.
-  // Si el fetch falla (p.ej. al abrir con file://), conserva solo los uploads locales.
+  // Carga manifest.json; si falla, conserva solo uploads locales
   async function loadManifest() {
     try {
       const res = await fetch('music/manifest.json', { cache: 'no-store' });
       if (!res.ok) throw new Error(res.status);
       const data = await res.json();
-      // El manifest puede ser array plano u objeto { tracks: [...] }; aceptamos ambos.
+      // Acepta array plano u objeto { tracks: [...] }
       const items = Array.isArray(data) ? data : data.tracks || [];
       tracks = items.map((t) => ({
         title: t.title || (t.src || '').split('/').pop() || 'Sin título',
@@ -73,8 +67,7 @@
       tracks = tracks.filter((t) => t.local); // sin manifest: conservar uploads
     }
     rebuildOrder();
-    // Restaurar la última posición reproducida (con clamp por si la lista cambió)
-    // o, si ya hay src cargado, limitarse a repintar.
+    // Restaurar última posición o repintar
     if (tracks.length && !audio.src) {
       loadTrack(order[Math.min(s.lastIndex, order.length - 1)] ?? 0, false);
     } else {
@@ -82,8 +75,7 @@
     }
   }
 
-  // Reconstruye `order` desde cero: secuencial, o Fisher-Yates si el shuffle está
-  // activo. Se invoca en cada toggle de shuffle, recarga del manifest y archivo añadido.
+  // Reconstruye `order` (Fisher-Yates si shuffle activo)
   function rebuildOrder() {
     order = tracks.map((_, i) => i);
     if (s.shuffle) {
@@ -96,17 +88,14 @@
   }
 
   // ---------- Render ----------
-  // Pistas visibles: todas las del catálogo + su índice original, filtradas por
-  // favoritos y por el texto de búsqueda (título + artista, en minúsculas).
+  // Pistas filtradas por favoritos y búsqueda
   function visibleTracks() {
     return tracks
       .map((t, i) => ({ ...t, idx: i }))
       .filter((t) => (filter !== 'favorites' || isFav(t)) && (t.title + ' ' + t.artist).toLowerCase().includes(query));
   }
 
-  // Repinta la playlist completa. El innerHTML deja <div class="t/a"> vacíos y el
-  // título/artista se asigna DESPUÉS con .textContent: así un título con HTML
-  // especial (<, &) nunca se interpreta como marcado.
+  // Repinta la playlist (usa .textContent para evitar inyección HTML)
   function render() {
     const list = visibleTracks();
     countEl.textContent = `${list.length} ${list.length === 1 ? 'canción' : 'canciones'}`;
@@ -124,25 +113,24 @@
       li.querySelector('.like').onclick = () => toggleFav(t);
       playlistEl.appendChild(li);
     });
-    // Alterna estado vacío vs. tarjeta "now playing" según haya pistas o no.
+    // Alterna estado vacío / now playing
     emptyState.classList.toggle('hidden', tracks.length > 0);
     nowPlaying.classList.toggle('hidden', tracks.length === 0);
     updateShuffleRepeatUI();
     refreshIcons();
   }
 
-  // Portada: imagen de fondo si hay `cover`; si no, icono por defecto.
+  // Portada: imagen o icono por defecto
   function setCover(el, track) {
     if (track.cover) { el.style.backgroundImage = `url("${track.cover}")`; el.textContent = ''; }
     else { el.style.backgroundImage = ''; el.innerHTML = iconHTML('music'); }
   }
 
-  // Carga la pista `i` (índice dentro de `tracks`) y la reproduce.
+  // Carga y reproduce la pista `i`
   function loadTrack(i, autoplay = true) {
     const t = tracks[i];
     if (!t) return;
-    // `pos` apunta a la pista dentro de `order` (el orden de reproducción),
-    // no al índice directo en `tracks`.
+    // `pos` apunta a la posición en `order`
     pos = Math.max(0, order.indexOf(i));
     s.lastIndex = pos; store.save();
     audio.src = t.src;
@@ -155,17 +143,16 @@
       updateFavUI(track);
     };
     syncTrackUI(t);
-    // Integración con el sistema operativo: teclas multimedia y pantalla de bloqueo.
+    // MediaSession (teclas multimedia / pantalla de bloqueo)
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist, album: 'Music Player' });
     }
     render();
-    // .catch(() => {}): el navegador puede bloquear el autoplay por falta de gesto previo.
+    // catch: el autoplay puede estar bloqueado
     if (autoplay) audio.play().catch(() => { });
   }
 
-  // Alterna favorito por identidad (src) y sincroniza el botón grande
-  // de "now playing" si la pista tocada es la que suena.
+  // Alterna favorito y sincroniza UI
   function toggleFav(t) {
     const id = idOf(t);
     const i = s.favorites.indexOf(id);
@@ -180,13 +167,13 @@
   };
   function updateFavUI(t) {
     const fav = isFav(t);
-    favBtn.classList.toggle('on', fav);   // el CSS rellena el corazón con .on
+    favBtn.classList.toggle('on', fav);
     favBtn.setAttribute('aria-pressed', fav);
   }
 
   // ---------- Controles ----------
   playBtn.onclick = () => (audio.paused ? audio.play() : audio.pause()).catch(() => { });
-  // El CSS alterna los iconos play/pause según la clase .is-playing.
+  // Alterna icono play/pause vía .is-playing
   const setPlayingUI = (playing) => {
     playBtn.classList.toggle('is-playing', playing);
     playBtn.setAttribute('aria-label', playing ? 'Pausar' : 'Reproducir');
@@ -194,13 +181,12 @@
   audio.onplay = () => setPlayingUI(true);
   audio.onpause = () => setPlayingUI(false);
   audio.onloadedmetadata = () => { $('dur').textContent = fmt(audio.duration); };
-  // Reloj + seek. El slider va de 0 a 1000 para no depender de floating point.
+  // Reloj + seek (slider 0–1000)
   audio.ontimeupdate = () => {
     $('cur').textContent = fmt(audio.currentTime);
     if (audio.duration) seek.value = Math.round((audio.currentTime / audio.duration) * 1000);
   };
-  // Fin de pista: repeat=one lo resuelve `audio.loop` (ver updateShuffleRepeatUI);
-  // aquí solo avanzamos según el modo activo.
+  // Fin de pista: avanza según modo de repetición
   audio.onended = () => {
     if (s.repeat === 'one' || !order.length) return;
     if (s.repeat === 'all') {
@@ -212,14 +198,12 @@
   seek.oninput = () => { if (audio.duration) audio.currentTime = (seek.value / 1000) * audio.duration; };
 
   $('nextBtn').onclick = () => order.length && loadTrack(order[(pos + 1) % order.length]);
-  // "Anterior": si la pista lleva más de 3 s, vuelve a su inicio (convención Spotify);
-  // solo si acaba de empezar, salta realmente a la pista previa.
+  // Anterior: >3s reinicia, si no va a la pista previa
   $('prevBtn').onclick = () => {
     if (audio.currentTime > 3) { audio.currentTime = 0; return; }
     if (order.length) loadTrack(order[(pos - 1 + order.length) % order.length]);
   };
-  // Shuffle: reconstruye el orden de reproducción y reancla `pos` a la pista
-  // que sonaba para no perder el contexto.
+  // Shuffle: reconstruye orden manteniendo pista actual
   shuffleBtn.onclick = () => {
     const cur = order[pos];
     s.shuffle = !s.shuffle; store.save();
@@ -227,7 +211,7 @@
     if (cur !== undefined) pos = order.indexOf(cur);
     render();
   };
-  // Ciclo de repetición: off → all → one → off ...
+  // Ciclo: off → all → one → off
   repeatBtn.onclick = () => {
     s.repeat = s.repeat === 'off' ? 'all' : s.repeat === 'all' ? 'one' : 'off';
     store.save(); updateShuffleRepeatUI();
@@ -244,7 +228,7 @@
     shuffleBtn.setAttribute('aria-pressed', s.shuffle);
     repeatBtn.classList.toggle('active', s.repeat !== 'off');
     repeatBtn.setAttribute('aria-pressed', s.repeat !== 'off');
-    repeatBtn.dataset.mode = s.repeat;   // off | all | one → el CSS muestra repeat o repeat-1
+    repeatBtn.dataset.mode = s.repeat;
     repeatBtn.title = labels.title;
     repeatBtn.setAttribute('aria-label', labels.ariaLabel);
   }
@@ -254,7 +238,7 @@
   audio.volume = s.volume ?? 0.9;
   vol.oninput = () => { audio.volume = vol.value / 100; s.volume = audio.volume; store.save(); updateMute(); };
   muteBtn.onclick = () => { audio.muted = !audio.muted; updateMute(); };
-  // Elige el icono volume-x / volume-1 / volume-2 vía data-level (lo interpreta el CSS).
+  // Icono de volumen según nivel
   function updateMute() {
     const silent = audio.muted || audio.volume === 0;
     muteBtn.dataset.level = silent ? 'muted' : audio.volume < 0.5 ? 'low' : 'high';
@@ -262,11 +246,11 @@
   }
   updateMute();
 
-  // Botón grande de favorito de "now playing": togglea la pista actual.
+  // Botón favorito de now playing
   favBtn.onclick = () => { const t = tracks[order[pos]]; if (t) toggleFav(t); };
 
   // ---------- Filtros + búsqueda ----------
-  // Un solo filtro puede estar activo; el click marca el botón y repinta.
+  // Filtros: un solo activo a la vez
   document.querySelectorAll('.filter').forEach((b) => {
     b.onclick = () => {
       document.querySelectorAll('.filter').forEach((x) => x.classList.remove('active'));
@@ -277,8 +261,7 @@
 
   // ---------- Añadir archivos ----------
   $('fileInput').onchange = (e) => addFiles(e.target.files);
-  // Convierte File(s) en pistas locales (blob URL, no persisten al recargar) y
-  // reproduce la primera de las añadidas.
+  // Añade archivos como pistas locales (blob URL) y reproduce la primera
   function addFiles(files) {
     const audios = [...files].filter(isAudio);
     audios.forEach((file) => tracks.push(buildLocalTrack(file)));
@@ -289,7 +272,7 @@
   }
 
   // ---------- Drag & drop ----------
-  // dragover/drop requieren preventDefault(); sin él el navegador no permite soltar.
+  // preventDefault() necesario para habilitar el drop
   const dz = $('dropZone'), hint = $('dropHint');
   ['dragenter', 'dragover'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); hint.classList.add('over'); }));
   dz.addEventListener('dragleave', (e) => { e.preventDefault(); hint.classList.remove('over'); });
@@ -300,7 +283,7 @@
   });
 
   // ---------- File System Access: abrir carpeta ./music ----------
-  // Solo Chrome/Edge (window.showDirectoryPicker); en otros navegadores avisa.
+  // Solo Chrome/Edge; avisa si no está soportado
   $('folderBtn').onclick = async () => {
     if (!window.showDirectoryPicker) { alert('Tu navegador no soporta abrir carpetas. Usa "Añadir música" o arrastra archivos.'); return; }
     try {
@@ -320,17 +303,14 @@
   $('rescanBtn').onclick = loadManifest;
   $('genHint').onclick = () => alert('Pon tus .mp3 en la carpeta ./music y ejecuta:\n\n  node tools/gen-manifest.js\n\nLuego pulsa el botón de recargar (↻) para actualizar la lista.');
 
-  // Móvil: tocar el logo alterna la sidebar (comportamiento definido en el
-  // @media (max-width: 860px) del CSS).
+  // Móvil: logo alterna sidebar
   document.querySelector('.logo').onclick = () => $('sidebar').classList.toggle('open');
 
   // ---------- Teclado + MediaSession ----------
-  // Letras sueltas → clic en el botón equivalente; flechas y espacio tienen
-  // comportamiento propio más abajo.
+  // Atajos de teclado
   const keyBtnMap = { n: 'nextBtn', p: 'prevBtn', m: 'muteBtn', f: 'favBtn', s: 'shuffleBtn' };
   document.addEventListener('keydown', (e) => {
-    // Ignorar atajos con el foco en campos de texto (p.ej. la búsqueda);
-    // los <input type="range"> sí responden a las flechas.
+    // Ignorar atajos en campos de texto (excepto sliders)
     if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
     const k = e.key.toLowerCase();
     if (e.code === 'Space') { e.preventDefault(); playBtn.click(); }
@@ -340,7 +320,7 @@
     else if (e.key === 'ArrowDown') { e.preventDefault(); vol.value = Math.max(0, +vol.value - 5); vol.oninput(); }
     else if (keyBtnMap[k]) $(keyBtnMap[k]).click();
   });
-  // Teclas multimedia del SO / auriculares Bluetooth → mismos handlers que los botones.
+  // Teclas multimedia del SO / Bluetooth
   try {
     navigator.mediaSession.setActionHandler('play', () => audio.play());
     navigator.mediaSession.setActionHandler('pause', () => audio.pause());
@@ -348,7 +328,7 @@
     navigator.mediaSession.setActionHandler('nexttrack', () => $('nextBtn').click());
   } catch { }
 
-  // Arranque: convertir los iconos del HTML estático y cargar el catálogo.
+  // Arranque
   refreshIcons();
   loadManifest();
 })();
